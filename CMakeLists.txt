@@ -48,4 +48,6 @@ add_executable(Ai
         src/training/Trainer.h
         src/neural/model/ModelSaver.cpp
         src/neural/model/ModelSaver.h
+        src/generation/TextGenerator.cpp
+        src/generation/TextGenerator.h
 )
