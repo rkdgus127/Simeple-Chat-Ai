@@ -15,3 +15,10 @@ std::shared_ptr<Tensor> Loss::mse(
 
     return squared->mean();
 }
+
+std::shared_ptr<Tensor> Loss::crossEntropy(
+    const std::shared_ptr<Tensor>& prediction,
+    const std::vector<int>& targets
+) {
+    return prediction->crossEntropy(targets);
+}

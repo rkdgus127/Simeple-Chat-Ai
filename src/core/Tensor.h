@@ -35,6 +35,10 @@ public:
         const std::shared_ptr<Tensor>& beta,
         double epsilon = 1e-5
     ) const;
+    
+    std::shared_ptr<Tensor> crossEntropy(
+        const std::vector<int>& targets
+    );
 
     void setData(const std::vector<double>& newData);
 
@@ -42,6 +46,7 @@ public:
     std::shared_ptr<Tensor> sigmoid();
     std::shared_ptr<Tensor> mean();
     std::shared_ptr<Tensor> softmax() const;
+    std::shared_ptr<Tensor> causalMask() const;
 
     static std::shared_ptr<Tensor> concatColumns(
         const std::vector<std::shared_ptr<Tensor>>& tensors

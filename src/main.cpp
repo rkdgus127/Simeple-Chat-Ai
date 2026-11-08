@@ -6,6 +6,9 @@
 #include "neural/layers/Embedding.h"
 #include "neural/encoding/PositionalEncoding.h"
 #include "neural/attention/SelfAttention.h"
+#include "neural/layers/FeedForward.h"
+#include "neural/loss/Loss.h"
+#include "neural/model/TransformerBlock.h"
 #include "neural/normalization/LayerNorm.h"
 
 int main() {
@@ -133,6 +136,143 @@ int main() {
 
     for (double value : layerNormParameters[1]->getGrad()) {
         std::cout << value << " ";
+    }
+
+    std::cout << "\n";
+
+    FeedForward feedForward(8);
+
+    auto feedForwardOutput = feedForward.forward(embedded);
+
+    std::cout << "Feed Forward Output Shape:\n";
+
+    for (auto dim : feedForwardOutput->getShape()) {
+        std::cout << dim << " ";
+    }
+
+    std::cout << "\n\n";
+
+    std::cout << "First Token Feed Forward Output:\n";
+
+    for (size_t i = 0; i < 8; i++) {
+        std::cout << feedForwardOutput->getData()[i] << " ";
+    }
+
+    std::cout << "\n\n";
+
+    feedForwardOutput->sum()->backward();
+
+    auto feedForwardParameters = feedForward.getParameters();
+
+    size_t feedForwardTotalParameters = 0;
+
+    for (const auto& parameter : feedForwardParameters) {
+        feedForwardTotalParameters += parameter->size();
+    }
+
+    std::cout << "Feed Forward Parameters: "
+              << feedForwardTotalParameters << "\n";
+
+    std::cout << "First Layer Weight Gradient:\n";
+
+    for (size_t i = 0; i < 16; i++) {
+        std::cout << feedForwardParameters[0]->getGrad()[i] << " ";
+    }
+
+    std::cout << "\n";
+
+    TransformerBlock transformerBlock(8, 4);
+
+    auto transformerOutput = transformerBlock.forward(embedded);
+
+    std::cout << "Transformer Block Output Shape:\n";
+
+    for (auto dim : transformerOutput->getShape()) {
+        std::cout << dim << " ";
+    }
+
+    std::cout << "\n\n";
+
+    std::cout << "First Token Transformer Output:\n";
+
+    for (size_t i = 0; i < 8; i++) {
+        std::cout << transformerOutput->getData()[i] << " ";
+    }
+
+    std::cout << "\n\n";
+
+    transformerOutput->sum()->backward();
+
+    auto transformerParameters = transformerBlock.getParameters();
+
+    size_t transformerTotalParameters = 0;
+
+    for (const auto& parameter : transformerParameters) {
+        transformerTotalParameters += parameter->size();
+    }
+
+    std::cout << "Transformer Parameters: "
+              << transformerTotalParameters << "\n";
+
+    std::cout << "Parameter Tensor Count: "
+              << transformerParameters.size() << "\n";
+
+    TransformerBlock causalBlock(8, 4);
+
+    auto causalOutput = causalBlock.forward(embedded, true);
+
+    std::cout << "Causal Transformer Output Shape:\n";
+
+    for (auto dim : causalOutput->getShape()) {
+        std::cout << dim << " ";
+    }
+
+    std::cout << "\n\n";
+
+    std::cout << "First Token Causal Output:\n";
+
+    for (size_t i = 0; i < 8; i++) {
+        std::cout << causalOutput->getData()[i] << " ";
+    }
+
+    std::cout << "\n\n";
+
+    causalOutput->sum()->backward();
+
+    auto causalParameters = causalBlock.getParameters();
+
+    size_t causalTotalParameters = 0;
+
+    for (const auto& parameter : causalParameters) {
+        causalTotalParameters += parameter->size();
+    }
+
+    std::cout << "Causal Transformer Parameters: "
+              << causalTotalParameters << "\n";
+
+    auto logits = Tensor::create({
+    2.0, 1.0, 0.1,
+    0.5, 2.5, 0.3,
+    1.0, 0.2, 3.0
+}, {3, 3}, true);
+
+    std::vector<int> targets = {
+        0,
+        1,
+        2
+    };
+
+    auto loss = Loss::crossEntropy(logits, targets);
+
+    std::cout << "Cross Entropy Loss:\n";
+    std::cout << loss->getData()[0] << "\n\n";
+
+    loss->backward();
+
+    std::cout << "Logits Gradient:\n";
+
+    for (double gradient : logits->getGrad()) {
+        std::cout << gradient << " ";
     }
 
     std::cout << "\n";

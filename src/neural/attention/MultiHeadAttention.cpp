@@ -37,7 +37,8 @@ MultiHeadAttention::MultiHeadAttention(
 }
 
 std::shared_ptr<Tensor> MultiHeadAttention::forward(
-    const std::shared_ptr<Tensor>& input
+    const std::shared_ptr<Tensor>& input,
+    bool causal
 ) {
     if (input->getShape().size() != 2 ||
         input->getShape()[1] != embeddingDim) {

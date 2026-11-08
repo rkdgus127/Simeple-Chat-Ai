@@ -9,4 +9,9 @@ public:
         const std::shared_ptr<Tensor>& prediction,
         const std::shared_ptr<Tensor>& target
     );
+
+    static std::shared_ptr<Tensor> crossEntropy(
+        const std::shared_ptr<Tensor>& prediction,
+        const std::vector<int>& targets
+    );
 };

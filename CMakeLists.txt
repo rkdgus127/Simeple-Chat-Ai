@@ -38,4 +38,8 @@ add_executable(Ai
         src/neural/attention/MultiHeadAttention.h
         src/neural/normalization/LayerNorm.cpp
         src/neural/normalization/LayerNorm.h
+        src/neural/layers/FeedForward.cpp
+        src/neural/layers/FeedForward.h
+        src/neural/model/TransformerBlock.cpp
+        src/neural/model/TransformerBlock.h
 )

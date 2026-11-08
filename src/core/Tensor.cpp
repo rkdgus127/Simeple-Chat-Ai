@@ -856,3 +856,140 @@ std::shared_ptr<Tensor> Tensor::layerNorm(
 
     return result;
 }
+
+std::shared_ptr<Tensor> Tensor::causalMask() const {
+    if (shape.size() != 2 || shape[0] != shape[1]) {
+        throw std::invalid_argument("Causal mask requires square 2D tensor");
+    }
+
+    size_t rows = shape[0];
+    size_t cols = shape[1];
+
+    std::vector<double> resultData = data;
+
+    for (size_t row = 0; row < rows; row++) {
+        for (size_t col = row + 1; col < cols; col++) {
+            resultData[row * cols + col] = -1e9;
+        }
+    }
+
+    auto self = std::const_pointer_cast<Tensor>(shared_from_this());
+
+    auto result = Tensor::create(
+        resultData,
+        shape,
+        requiresGrad
+    );
+
+    result->parents.push_back(self);
+
+    result->backwardFn = [self, result, rows, cols]() {
+        for (size_t row = 0; row < rows; row++) {
+            for (size_t col = 0; col < cols; col++) {
+                size_t index = row * cols + col;
+
+                if (col <= row) {
+                    self->grad[index] += result->grad[index];
+                }
+            }
+        }
+    };
+
+    return result;
+}
+
+std::shared_ptr<Tensor> Tensor::crossEntropy(
+    const std::vector<int>& targets
+) {
+    if (shape.size() != 2) {
+        throw std::invalid_argument("Cross entropy requires 2D tensor");
+    }
+
+    size_t rows = shape[0];
+    size_t cols = shape[1];
+
+    if (targets.size() != rows) {
+        throw std::invalid_argument("Target count mismatch");
+    }
+
+    double loss = 0.0;
+
+    for (size_t row = 0; row < rows; row++) {
+        int target = targets[row];
+
+        if (target < 0 || static_cast<size_t>(target) >= cols) {
+            throw std::invalid_argument("Target index out of range");
+        }
+
+        double maxValue = data[row * cols];
+
+        for (size_t col = 1; col < cols; col++) {
+            maxValue = std::max(
+                maxValue,
+                data[row * cols + col]
+            );
+        }
+
+        double sumExp = 0.0;
+
+        for (size_t col = 0; col < cols; col++) {
+            sumExp += std::exp(
+                data[row * cols + col] - maxValue
+            );
+        }
+
+        loss += std::log(sumExp)
+              + maxValue
+              - data[row * cols + target];
+    }
+
+    loss /= static_cast<double>(rows);
+
+    auto self = shared_from_this();
+
+    auto result = Tensor::create(
+        {loss},
+        {1},
+        requiresGrad
+    );
+
+    result->parents.push_back(self);
+
+    result->backwardFn = [self, result, targets, rows, cols]() {
+        for (size_t row = 0; row < rows; row++) {
+            double maxValue = self->data[row * cols];
+
+            for (size_t col = 1; col < cols; col++) {
+                maxValue = std::max(
+                    maxValue,
+                    self->data[row * cols + col]
+                );
+            }
+
+            double sumExp = 0.0;
+
+            for (size_t col = 0; col < cols; col++) {
+                sumExp += std::exp(
+                    self->data[row * cols + col] - maxValue
+                );
+            }
+
+            for (size_t col = 0; col < cols; col++) {
+                double probability =
+                    std::exp(self->data[row * cols + col] - maxValue)
+                    / sumExp;
+
+                double gradient = probability;
+
+                if (static_cast<int>(col) == targets[row]) {
+                    gradient -= 1.0;
+                }
+
+                self->grad[row * cols + col] +=
+                    gradient * result->grad[0] / static_cast<double>(rows);
+            }
+        }
+    };
+
+    return result;
+}
