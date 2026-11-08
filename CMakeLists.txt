@@ -14,4 +14,14 @@ add_executable(Ai
         src/core/Tensor.h
         src/core/Autograd.cpp
         src/core/Autograd.h
+        src/neural/Linear.cpp
+        src/neural/Linear.h
+        src/neural/Activation.cpp
+        src/neural/Activation.h
+        src/neural/Loss.cpp
+        src/neural/Loss.h
+        src/optimizer/Adam.cpp
+        src/optimizer/Adam.h
+        src/neural/Sequential.cpp
+        src/neural/Sequential.h
 )
