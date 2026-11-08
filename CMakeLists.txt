@@ -50,4 +50,6 @@ add_executable(Ai
         src/neural/model/ModelSaver.h
         src/generation/TextGenerator.cpp
         src/generation/TextGenerator.h
+        src/dataset/Dataset.cpp
+        src/dataset/Dataset.h
 )
