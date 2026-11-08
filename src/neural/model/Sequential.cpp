@@ -1,5 +1,5 @@
 #include "Sequential.h"
-#include "Activation.h"
+#include "../layers/Activation.h"
 
 void Sequential::addLinear(size_t inputSize, size_t outputSize) {
     auto linear = std::make_shared<Linear>(inputSize, outputSize);

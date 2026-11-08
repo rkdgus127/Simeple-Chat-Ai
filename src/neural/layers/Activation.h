@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../core/Tensor.h"
+#include "../../core/Tensor.h"
 #include <memory>
 
 class Activation {

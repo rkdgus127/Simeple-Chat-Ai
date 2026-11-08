@@ -14,18 +14,28 @@ add_executable(Ai
         src/core/Tensor.h
         src/core/Autograd.cpp
         src/core/Autograd.h
-        src/neural/Linear.cpp
-        src/neural/Linear.h
-        src/neural/Activation.cpp
-        src/neural/Activation.h
-        src/neural/Loss.cpp
-        src/neural/Loss.h
+        src/neural/layers/Linear.cpp
+        src/neural/layers/Linear.h
+        src/neural/layers/Activation.cpp
+        src/neural/layers/Activation.h
+        src/neural/loss/Loss.cpp
+        src/neural/loss/Loss.h
         src/optimizer/Adam.cpp
         src/optimizer/Adam.h
-        src/neural/Sequential.cpp
-        src/neural/Sequential.h
+        src/neural/model/Sequential.cpp
+        src/neural/model/Sequential.h
         src/tokenizer/Tokenizer.cpp
         src/tokenizer/Tokenizer.h
         src/tokenizer/BPETokenizer.cpp
         src/tokenizer/BPETokenizer.h
+        src/neural/layers/Embedding.cpp
+        src/neural/layers/Embedding.h
+        src/neural/encoding/PositionalEncoding.cpp
+        src/neural/encoding/PositionalEncoding.h
+        src/neural/attention/SelfAttention.cpp
+        src/neural/attention/SelfAttention.h
+        src/neural/attention/MultiHeadAttention.cpp
+        src/neural/attention/MultiHeadAttention.h
+        src/neural/normalization/LayerNorm.cpp
+        src/neural/normalization/LayerNorm.h
 )

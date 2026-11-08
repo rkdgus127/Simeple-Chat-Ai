@@ -4,6 +4,8 @@
 #include <numeric>
 #include <unordered_set>
 #include <utility>
+#include <algorithm>
+#include <cmath>
 
 Tensor::Tensor(
     std::vector<double> data,
@@ -587,4 +589,270 @@ std::shared_ptr<Tensor> Tensor::mean() {
     }
 
     return output;
+}
+
+std::shared_ptr<Tensor> Tensor::softmax() const {
+    if (shape.size() != 2) {
+        throw std::invalid_argument("Softmax requires a 2D tensor");
+    }
+
+    size_t rows = shape[0];
+    size_t cols = shape[1];
+
+    std::vector<double> resultData(data.size());
+
+    for (size_t i = 0; i < rows; i++) {
+        double maxValue = data[i * cols];
+
+        for (size_t j = 1; j < cols; j++) {
+            maxValue = std::max(maxValue, data[i * cols + j]);
+        }
+
+        double sum = 0.0;
+
+        for (size_t j = 0; j < cols; j++) {
+            double value = std::exp(data[i * cols + j] - maxValue);
+
+            resultData[i * cols + j] = value;
+            sum += value;
+        }
+
+        for (size_t j = 0; j < cols; j++) {
+            resultData[i * cols + j] /= sum;
+        }
+    }
+
+    auto result = Tensor::create(resultData, shape, requiresGrad);
+
+    auto self = std::const_pointer_cast<Tensor>(shared_from_this());
+
+    result->parents.push_back(self);
+
+    result->backwardFn = [self, result, rows, cols]() {
+        for (size_t i = 0; i < rows; i++) {
+            double dot = 0.0;
+
+            for (size_t j = 0; j < cols; j++) {
+                size_t index = i * cols + j;
+
+                dot += result->grad[index] * result->data[index];
+            }
+
+            for (size_t j = 0; j < cols; j++) {
+                size_t index = i * cols + j;
+
+                self->grad[index] += result->data[index] *
+                    (result->grad[index] - dot);
+            }
+        }
+    };
+
+    return result;
+}
+
+std::shared_ptr<Tensor> Tensor::concatColumns(
+    const std::vector<std::shared_ptr<Tensor>>& tensors
+) {
+    if (tensors.empty()) {
+        throw std::invalid_argument("Cannot concatenate empty tensors");
+    }
+
+    size_t rows = tensors[0]->getShape()[0];
+    size_t totalCols = 0;
+
+    std::vector<size_t> widths;
+
+    for (const auto& tensor : tensors) {
+        if (tensor->getShape().size() != 2 ||
+            tensor->getShape()[0] != rows) {
+            throw std::invalid_argument("Tensor shape mismatch");
+        }
+
+        size_t cols = tensor->getShape()[1];
+        widths.push_back(cols);
+        totalCols += cols;
+    }
+
+    std::vector<double> resultData(rows * totalCols);
+    bool requiresGrad = false;
+
+    for (const auto& tensor : tensors) {
+        if (tensor->requiresGrad) {
+            requiresGrad = true;
+        }
+    }
+
+    for (size_t row = 0; row < rows; row++) {
+        size_t offset = 0;
+
+        for (size_t i = 0; i < tensors.size(); i++) {
+            const auto& data = tensors[i]->getData();
+            size_t cols = widths[i];
+
+            for (size_t col = 0; col < cols; col++) {
+                resultData[row * totalCols + offset + col] =
+                    data[row * cols + col];
+            }
+
+            offset += cols;
+        }
+    }
+
+    auto result = Tensor::create(
+        resultData,
+        {rows, totalCols},
+        requiresGrad
+    );
+
+    for (const auto& tensor : tensors) {
+        result->parents.push_back(tensor);
+    }
+
+    result->backwardFn = [tensors, result, rows, totalCols, widths]() {
+        for (size_t i = 0; i < tensors.size(); i++) {
+            if (!tensors[i]->requiresGrad) continue;
+
+            size_t offset = 0;
+
+            for (size_t j = 0; j < i; j++) {
+                offset += widths[j];
+            }
+
+            size_t cols = widths[i];
+
+            for (size_t row = 0; row < rows; row++) {
+                for (size_t col = 0; col < cols; col++) {
+                    tensors[i]->grad[row * cols + col] +=
+                        result->grad[row * totalCols + offset + col];
+                }
+            }
+        }
+    };
+
+    return result;
+}
+
+std::shared_ptr<Tensor> Tensor::layerNorm(
+    const std::shared_ptr<Tensor>& gamma,
+    const std::shared_ptr<Tensor>& beta,
+    double epsilon
+) const {
+    if (shape.size() != 2) {
+        throw std::invalid_argument("LayerNorm requires 2D tensor");
+    }
+
+    size_t rows = shape[0];
+    size_t cols = shape[1];
+
+    if (gamma->getShape() != std::vector<size_t>{1, cols} ||
+        beta->getShape() != std::vector<size_t>{1, cols}) {
+        throw std::invalid_argument("LayerNorm parameter shape mismatch");
+    }
+
+    std::vector<double> normalized(data.size());
+    std::vector<double> inverseStd(rows);
+    std::vector<double> resultData(data.size());
+
+    for (size_t row = 0; row < rows; row++) {
+        double mean = 0.0;
+
+        for (size_t col = 0; col < cols; col++) {
+            mean += data[row * cols + col];
+        }
+
+        mean /= static_cast<double>(cols);
+
+        double variance = 0.0;
+
+        for (size_t col = 0; col < cols; col++) {
+            double diff = data[row * cols + col] - mean;
+            variance += diff * diff;
+        }
+
+        variance /= static_cast<double>(cols);
+
+        inverseStd[row] = 1.0 / std::sqrt(variance + epsilon);
+
+        for (size_t col = 0; col < cols; col++) {
+            size_t index = row * cols + col;
+
+            normalized[index] =
+                (data[index] - mean) * inverseStd[row];
+
+            resultData[index] =
+                normalized[index] * gamma->getData()[col]
+                + beta->getData()[col];
+        }
+    }
+
+    auto self = std::const_pointer_cast<Tensor>(shared_from_this());
+
+    auto result = Tensor::create(
+        resultData,
+        shape,
+        requiresGrad || gamma->requiresGrad || beta->requiresGrad
+    );
+
+    result->parents.push_back(self);
+    result->parents.push_back(gamma);
+    result->parents.push_back(beta);
+
+    result->backwardFn = [
+        self, gamma, beta, result,
+        normalized, inverseStd, rows, cols
+    ]() {
+        for (size_t col = 0; col < cols; col++) {
+            double gammaGrad = 0.0;
+            double betaGrad = 0.0;
+
+            for (size_t row = 0; row < rows; row++) {
+                size_t index = row * cols + col;
+
+                double grad = result->grad[index];
+
+                gammaGrad += grad * normalized[index];
+                betaGrad += grad;
+            }
+
+            if (gamma->requiresGrad) {
+                gamma->grad[col] += gammaGrad;
+            }
+
+            if (beta->requiresGrad) {
+                beta->grad[col] += betaGrad;
+            }
+        }
+
+        for (size_t row = 0; row < rows; row++) {
+            double sumGrad = 0.0;
+            double sumGradNormalized = 0.0;
+
+            for (size_t col = 0; col < cols; col++) {
+                size_t index = row * cols + col;
+
+                double grad = result->grad[index] * gamma->data[col];
+
+                sumGrad += grad;
+                sumGradNormalized += grad * normalized[index];
+            }
+
+            for (size_t col = 0; col < cols; col++) {
+                size_t index = row * cols + col;
+
+                if (self->requiresGrad) {
+                    double grad = result->grad[index] * gamma->data[col];
+
+                    self->grad[index] +=
+                        inverseStd[row] / static_cast<double>(cols) *
+                        (
+                            static_cast<double>(cols) * grad
+                            - sumGrad
+                            - normalized[index] * sumGradNormalized
+                        );
+                }
+            }
+        }
+    };
+
+    return result;
 }

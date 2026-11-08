@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Linear.h"
-#include "../core/Tensor.h"
+#include "../layers/Linear.h"
+#include "../../core/Tensor.h"
 
 #include <memory>
 #include <vector>

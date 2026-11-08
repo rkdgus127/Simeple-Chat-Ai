@@ -30,11 +30,22 @@ public:
         bool requiresGrad = false
     );
 
+    std::shared_ptr<Tensor> layerNorm(
+        const std::shared_ptr<Tensor>& gamma,
+        const std::shared_ptr<Tensor>& beta,
+        double epsilon = 1e-5
+    ) const;
+
     void setData(const std::vector<double>& newData);
 
     std::shared_ptr<Tensor> relu();
     std::shared_ptr<Tensor> sigmoid();
     std::shared_ptr<Tensor> mean();
+    std::shared_ptr<Tensor> softmax() const;
+
+    static std::shared_ptr<Tensor> concatColumns(
+        const std::vector<std::shared_ptr<Tensor>>& tensors
+    );
 
     const std::vector<double>& getData() const;
     const std::vector<double>& getGrad() const;
