@@ -8,10 +8,14 @@
 #include "neural/attention/SelfAttention.h"
 #include "neural/layers/FeedForward.h"
 #include "neural/loss/Loss.h"
+#include "neural/model/LanguageModel.h"
 #include "neural/model/TransformerBlock.h"
 #include "neural/normalization/LayerNorm.h"
+#include "training/Trainer.h"
+#include "neural/model/ModelSaver.h"
 
-int main() {
+int main()
+{
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 
@@ -277,7 +281,96 @@ int main() {
 
     std::cout << "\n";
 
-    std::cout << parameterCount << std::endl;
+    LanguageModel model(
+        tokenizer.vocabSize(),
+        8,
+        4,
+        2
+    );
+
+    auto modelOutput = model.forward(tokens);
+
+    std::cout << "Language Model Output Shape:\n";
+
+    for (auto dim : modelOutput->getShape()) {
+        std::cout << dim << " ";
+    }
+
+    std::cout << "\n\n";
+
+    std::cout << "First Token Logits:\n";
+
+    for (size_t i = 0; i < 10; i++) {
+        std::cout << modelOutput->getData()[i] << " ";
+    }
+
+    std::cout << "\n\n";
+
+    auto modelParameters = model.getParameters();
+
+    size_t modelTotalParameters = 0;
+
+    for (const auto& parameter : modelParameters) {
+        modelTotalParameters += parameter->size();
+    }
+
+    std::cout << "Total Parameters: "
+              << modelTotalParameters << "\n";
+
+    std::cout << "Parameter Tensor Count: "
+              << modelParameters.size() << "\n";
+
+    auto modelLoss = modelOutput->crossEntropy(
+        std::vector<int>(tokens.size(), 0)
+    );
+
+    std::cout << "Test Loss: "
+              << modelLoss->getData()[0] << "\n";
+
+    Trainer trainer(model, 0.001);
+
+    std::vector<int> trainingTokens = tokens;
+
+    std::cout << "\nTraining Start\n\n";
+
+    for (int epoch = 0; epoch <= 500; epoch++) {
+        double loss = trainer.trainStep(trainingTokens);
+
+        if (epoch % 50 == 0) {
+            std::cout << "Epoch: "
+                      << epoch
+                      << " | Loss: "
+                      << loss
+                      << "\n";
+        }
+    }
+
+    std::cout << "\nTraining Complete\n";
+
+    ModelSaver::save(model, "model.bin");
+
+    std::cout << "Model Saved!\n";
+
+    LanguageModel loadedModel(
+        tokenizer.vocabSize(),
+        8,
+        4,
+        2
+    );
+
+    ModelSaver::load(loadedModel, "model.bin");
+
+    std::cout << "Model Loaded!\n";
+
+    auto loadedOutput = loadedModel.forward(tokens);
+
+    std::cout << "Loaded Model Output:\n";
+
+    for (size_t i = 0; i < 10; i++) {
+        std::cout << loadedOutput->getData()[i] << " ";
+    }
+
+    std::cout << "\n";
 
     return 0;
 }

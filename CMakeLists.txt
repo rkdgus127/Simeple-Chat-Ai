@@ -42,4 +42,10 @@ add_executable(Ai
         src/neural/layers/FeedForward.h
         src/neural/model/TransformerBlock.cpp
         src/neural/model/TransformerBlock.h
+        src/neural/model/LanguageModel.cpp
+        src/neural/model/LanguageModel.h
+        src/training/Trainer.cpp
+        src/training/Trainer.h
+        src/neural/model/ModelSaver.cpp
+        src/neural/model/ModelSaver.h
 )
