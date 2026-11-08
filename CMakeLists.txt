@@ -53,3 +53,6 @@ add_executable(Ai
         src/dataset/Dataset.cpp
         src/dataset/Dataset.h
 )
+target_compile_definitions(Ai PRIVATE
+        PROJECT_DIR="${CMAKE_SOURCE_DIR}"
+)

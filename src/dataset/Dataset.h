@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <filesystem>
 
 #include "../tokenizer/BPETokenizer.h"
 
@@ -10,10 +11,10 @@ private:
     std::vector<std::vector<int>> sequences;
 
 public:
-    static std::string readText(const std::string& path);
+    static std::string readText(const std::filesystem::path& path);
 
     void load(
-        const std::string& path,
+        const std::filesystem::path& path,
         BPETokenizer& tokenizer
     );
 

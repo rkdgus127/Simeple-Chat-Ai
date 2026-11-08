@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <filesystem>
 #include <iostream>
 #include <vector>
 #include <string>
@@ -15,7 +16,12 @@ int main() {
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 
-    std::string datasetPath = "data/training.txt";
+    std::filesystem::path datasetPath =
+    std::filesystem::path(PROJECT_DIR) / "data" / "training.txt";
+
+    std::cout << "Dataset Path: " << datasetPath.string() << "\n";
+    std::cout << "File Exists: "
+              << std::filesystem::exists(datasetPath) << "\n";
 
     std::string trainingData = Dataset::readText(datasetPath);
 
