@@ -1,65 +1,44 @@
 #include <iostream>
-
-#include "neural/Sequential.h"
-#include "neural/Loss.h"
-#include "optimizer/Adam.h"
+#include "tokenizer/BPETokenizer.h"
+#include <windows.h>
 
 int main() {
-    Sequential model;
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+    BPETokenizer tokenizer;
 
-    model.addLinear(2, 8);
-    model.addReLU();
-    model.addLinear(8, 1);
+    std::string trainingData =
+        "hello hello hello help help "
+        "hello hello help "
+        "안녕하세요 안녕하세요 "
+        "AI를 만들고 있습니다 AI를 만들고 있습니다 ";
 
-    Adam optimizer(
-        model.getParameters(),
-        0.01
-    );
+    tokenizer.train(trainingData, 30);
 
-    auto input = Tensor::create(
-        {
-            1, 0,
-            0, 1,
-            1, 1,
-            2, 1
-        },
-        {4, 2}
-    );
+    std::string text = "hello 안녕하세요 AI를 만들고 있습니다";
 
-    auto target = Tensor::create(
-        {
-            1,
-            1,
-            2,
-            3
-        },
-        {4, 1}
-    );
+    auto tokens = tokenizer.encode(text);
 
-    for (int epoch = 0; epoch < 2000; epoch++) {
-        auto prediction = model.forward(input);
+    std::cout << "Original Text:\n";
+    std::cout << text << "\n";
 
-        auto loss = Loss::mse(prediction, target);
+    std::cout << "\nToken IDs:\n";
 
-        loss->backward();
-
-        optimizer.step();
-
-        if (epoch % 200 == 0) {
-            std::cout
-                << "Epoch: " << epoch
-                << " | Loss: " << loss->getData()[0]
-                << std::endl;
-        }
+    for (int token : tokens) {
+        std::cout << token << " ";
     }
 
-    auto prediction = model.forward(input);
+    std::cout << "\n\nToken Count: " << tokens.size() << "\n";
+    std::cout << "Vocabulary Size: " << tokenizer.vocabSize() << "\n";
 
-    std::cout << "\nFinal Prediction:" << std::endl;
+    std::string decoded = tokenizer.decode(tokens);
 
-    for (double value : prediction->getData()) {
-        std::cout << value << std::endl;
-    }
+    std::cout << "\nDecoded Text:\n";
+    std::cout << decoded << "\n";
+
+    std::cout << "\nMatch: "
+              << (text == decoded ? "TRUE" : "FALSE")
+              << "\n";
 
     return 0;
 }

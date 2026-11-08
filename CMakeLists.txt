@@ -24,4 +24,8 @@ add_executable(Ai
         src/optimizer/Adam.h
         src/neural/Sequential.cpp
         src/neural/Sequential.h
+        src/tokenizer/Tokenizer.cpp
+        src/tokenizer/Tokenizer.h
+        src/tokenizer/BPETokenizer.cpp
+        src/tokenizer/BPETokenizer.h
 )
