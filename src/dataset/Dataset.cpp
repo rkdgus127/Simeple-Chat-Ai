@@ -37,7 +37,7 @@ void Dataset::load(
             continue;
         }
 
-        std::vector<int> tokens = tokenizer.encode(line);
+        std::vector<int> tokens = tokenizer.encodeSequence(line);
 
         if (tokens.size() < 2) {
             continue;

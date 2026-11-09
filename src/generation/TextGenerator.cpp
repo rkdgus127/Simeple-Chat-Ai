@@ -79,7 +79,15 @@ std::string TextGenerator::generate(
         throw std::invalid_argument("Temperature cannot be negative");
     }
 
-    std::vector<int> tokens = tokenizer.encode(prompt);
+    std::vector<int> tokens = {BPETokenizer::BOS};
+
+    std::vector<int> promptTokens = tokenizer.encode(prompt);
+
+    tokens.insert(
+        tokens.end(),
+        promptTokens.begin(),
+        promptTokens.end()
+    );
 
     if (tokens.empty()) {
         throw std::invalid_argument("Tokenized prompt cannot be empty");
@@ -101,6 +109,15 @@ std::string TextGenerator::generate(
         );
 
         int nextToken = selectToken(logits, temperature);
+
+        if (nextToken == BPETokenizer::EOS) {
+            break;
+        }
+
+        if (nextToken == BPETokenizer::BOS ||
+            nextToken == BPETokenizer::PAD) {
+            continue;
+            }
 
         tokens.push_back(nextToken);
     }
