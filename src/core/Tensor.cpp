@@ -6,6 +6,7 @@
 #include <utility>
 #include <algorithm>
 #include <cmath>
+#include <random>
 
 Tensor::Tensor(
     std::vector<double> data,
@@ -992,4 +993,55 @@ std::shared_ptr<Tensor> Tensor::crossEntropy(
     };
 
     return result;
+}
+TensorPtr Tensor::dropout(double probability, bool training) {
+    if (probability < 0.0 || probability >= 1.0) {
+        throw std::invalid_argument("Dropout probability must be between 0 and 1");
+    }
+
+    if (!training || probability == 0.0) {
+        return shared_from_this();
+    }
+
+    static std::mt19937 randomEngine(std::random_device{}());
+
+    std::bernoulli_distribution distribution(1.0 - probability);
+
+    double scale = 1.0 / (1.0 - probability);
+
+    std::vector<double> outputData(data.size());
+    std::vector<double> mask(data.size());
+
+    for (size_t i = 0; i < data.size(); i++) {
+        if (distribution(randomEngine)) {
+            mask[i] = scale;
+            outputData[i] = data[i] * scale;
+        } else {
+            mask[i] = 0.0;
+            outputData[i] = 0.0;
+        }
+    }
+
+    auto output = create(outputData, shape, requiresGrad);
+
+    if (requiresGrad) {
+        auto self = shared_from_this();
+        std::weak_ptr<Tensor> weakOutput = output;
+
+        output->parents = {self};
+
+        output->backwardFn = [self, weakOutput, mask]() {
+            auto out = weakOutput.lock();
+
+            if (!out) {
+                return;
+            }
+
+            for (size_t i = 0; i < self->grad.size(); i++) {
+                self->grad[i] += out->grad[i] * mask[i];
+            }
+        };
+    }
+
+    return output;
 }

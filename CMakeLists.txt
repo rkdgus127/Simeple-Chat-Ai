@@ -52,6 +52,8 @@ add_executable(Ai
         src/generation/TextGenerator.h
         src/dataset/Dataset.cpp
         src/dataset/Dataset.h
+        src/tokenizer/TokenizerSaver.cpp
+        src/tokenizer/TokenizerSaver.h
 )
 target_compile_definitions(Ai PRIVATE
         PROJECT_DIR="${CMAKE_SOURCE_DIR}"

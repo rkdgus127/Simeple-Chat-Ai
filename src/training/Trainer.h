@@ -11,14 +11,15 @@ private:
     Adam optimizer;
 
 public:
-    explicit Trainer(
-        LanguageModel& model,
-        double learningRate = 0.001
-    );
+    explicit Trainer(LanguageModel& model, double learningRate = 0.001);
 
     double trainStep(const std::vector<int>& tokens);
 
     double trainEpoch(
+        const std::vector<std::vector<int>>& dataset
+    );
+
+    double evaluate(
         const std::vector<std::vector<int>>& dataset
     );
 };

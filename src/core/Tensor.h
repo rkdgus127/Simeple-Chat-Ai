@@ -6,7 +6,11 @@
 #include <cmath>
 #include <cstddef>
 
+class Tensor;
+using TensorPtr = std::shared_ptr<Tensor>;
+
 class Tensor : public std::enable_shared_from_this<Tensor> {
+
 private:
     std::vector<double> data;
     std::vector<double> grad;
@@ -47,6 +51,7 @@ public:
     std::shared_ptr<Tensor> mean();
     std::shared_ptr<Tensor> softmax() const;
     std::shared_ptr<Tensor> causalMask() const;
+    TensorPtr dropout(double probability, bool training = true);
 
     static std::shared_ptr<Tensor> concatColumns(
         const std::vector<std::shared_ptr<Tensor>>& tensors

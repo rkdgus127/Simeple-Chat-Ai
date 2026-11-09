@@ -8,17 +8,21 @@
 
 class Dataset {
 private:
-    std::vector<std::vector<int>> sequences;
+    std::vector<std::vector<int>> trainSequences;
+    std::vector<std::vector<int>> validationSequences;
 
 public:
     static std::string readText(const std::filesystem::path& path);
 
     void load(
         const std::filesystem::path& path,
-        BPETokenizer& tokenizer
+        BPETokenizer& tokenizer,
+        double validationRatio = 0.2
     );
 
-    const std::vector<std::vector<int>>& getSequences() const;
+    const std::vector<std::vector<int>>& getTrainSequences() const;
+    const std::vector<std::vector<int>>& getValidationSequences() const;
 
-    size_t size() const;
+    size_t trainSize() const;
+    size_t validationSize() const;
 };

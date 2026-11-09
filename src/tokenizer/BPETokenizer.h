@@ -5,6 +5,7 @@
 #include <map>
 
 class BPETokenizer {
+    friend class TokenizerSaver;
 public:
     static constexpr int PAD = 256;
     static constexpr int UNK = 257;
